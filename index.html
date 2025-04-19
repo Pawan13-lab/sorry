@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happiness Detector</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 500px;
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+        }
+        
+        h1 {
+            color: #444;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, #6e8efb, #a777e3);
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            position: relative;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+            z-index: -1;
+        }
+        
+        .btn:hover::before {
+            width: 100%;
+        }
+        
+        .btn-yes {
+            background: linear-gradient(45deg, #00c853, #69f0ae);
+            color: white;
+        }
+        
+        .btn-yes:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 200, 83, 0.3);
+        }
+        
+        .btn-no {
+            background: linear-gradient(45deg, #ff3d00, #ff8a65);
+            color: white;
+            position: relative;
+        }
+        
+        .btn-no:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(255, 61, 0, 0.3);
+        }
+        
+        .result {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            min-height: 60px;
+            padding: 10px;
+            border-radius: 10px;
+            transition: all 0.5s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .result.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #f00;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .emoji {
+            font-size: 2rem;
+            margin: 10px 0;
+            animation: bounce 1s infinite alternate;
+            display: inline-block;
+        }
+        
+        @keyframes bounce {
+            from { transform: scale(1); }
+            to { transform: scale(1.3); }
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            height: 10px;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #ff3d00, #ff8a65);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            animation: float 8s infinite ease-in-out;
+            z-index: 0;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <h1>Are you happy today?</h1>
+        <div class="emoji" id="emoji">😊</div>
+        <div class="buttons">
+            <button class="btn btn-yes" id="yesBtn" onclick="handleYes()">Yes</button>
+            <button class="btn btn-no" id="noBtn" onclick="handleNo()">No</button>
+        </div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let noCount = 0;
+        const yesBtn = document.getElementById('yesBtn');
+        const noBtn = document.getElementById('noBtn');
+        const result = document.getElementById('result');
+        const emoji = document.getElementById('emoji');
+        const container = document.getElementById('container');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        
+        // Create background bubbles
+        function createBubbles() {
+            for (let i = 0; i < 15; i++) {
+                const bubble = document.createElement('div');
+                bubble.classList.add('bubble');
+                
+                const size = Math.random() * 100 + 50;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                
+                bubble.style.left = `${Math.random() * 100}vw`;
+                bubble.style.top = `${Math.random() * 100}vh`;
+                
+                bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
+                bubble.style.animationDelay = `${Math.random() * 5}s`;
+                
+                document.body.appendChild(bubble);
+            }
+        }
+        
+        function createConfetti() {
+            const colors = ['#ff3d00', '#2196f3', '#ffeb3b', '#4caf50', '#9c27b0', '#ff9800'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                // Random position across top of screen
+                const posX = Math.random() * window.innerWidth;
+                confetti.style.left = `${posX}px`;
+                confetti.style.top = '0';
+                
+                // Random color
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.backgroundColor = color;
+                
+                // Random size
+                const size = Math.random() * 10 + 5;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                
+                // Random shape - sometimes make squares
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '0';
+                }
+                
+                // Randomize animation timing
+                const animDuration = Math.random() * 3 + 2;
+                confetti.style.animation = `fall ${animDuration}s linear forwards`;
+                confetti.style.animationDelay = `${Math.random() * 2}s`;
+                
+                document.body.appendChild(confetti);
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    confetti.remove();
+                }, (animDuration + 2) * 1000);
+            }
+        }
+
+        function handleYes() {
+            // Celebration effects
+            createConfetti();
+            result.textContent = "That's wonderful! Keep that positive energy! 😊";
+            result.style.background = "linear-gradient(45deg, rgba(0, 200, 83, 0.2), rgba(105, 240, 174, 0.2))";
+            result.style.color = "#00a043";
+            result.classList.add('show');
+            
+            emoji.innerHTML = "🥳";
+            emoji.style.animation = "bounce 0.5s infinite alternate";
+            
+            resetYesButton();
+            progressContainer.style.display = 'none';
+            
+            // Add sparkle effect to container
+            container.style.boxShadow = "0 10px 30px rgba(0, 200, 83, 0.4)";
+            
+            // Reset state after delay
+            setTimeout(() => {
+                noCount = 0;
+            }, 2000);
+        }
+
+        function handleNo() {
+            noCount++;
+            
+            if (noCount === 1) {
+                progressContainer.style.display = 'block';
+            }
+            
+            updateProgressBar();
+            
+            if (noCount < 5) {
+                const messages = [
+                    "Are you sure? Try again!",
+                    "Really? Think again...",
+                    "Come on, it can't be that bad!",
+                    "One more chance to be positive!"
+                ];
+                
+                result.textContent = messages[noCount - 1];
+                result.style.background = "linear-gradient(45deg, rgba(255, 61, 0, 0.2), rgba(255, 138, 101, 0.2))";
+                result.style.color = "#d93200";
+                result.classList.add('show');
+                
+                // Update emoji
+                const sadEmojis = ["🤔", "😕", "😟", "😢"];
+                emoji.innerHTML = sadEmojis[noCount - 1];
+                
+                // Shake the container
+                container.classList.add('shake');
+                setTimeout(() => {
+                    container.classList.remove('shake');
+                }, 500);
+                
+                // Increase Yes button size
+                yesBtn.style.fontSize = `${1.1 + noCount * 0.2}rem`;
+                yesBtn.style.padding = `${12 + noCount * 5}px ${30 + noCount * 10}px`;
+                
+                if (noCount >= 3) {
+                    // Make Yes button take up more space
+                    yesBtn.style.width = `${Math.min(20 + 15 * noCount, 75)}%`;
+                }
+            } else if (noCount === 5) {
+                result.textContent = "Last chance to be honest... I won't judge!";
+                emoji.innerHTML = "😭";
+                resetYesButton();
+                
+                // Change background color to indicate final stage
+                document.body.style.background = "linear-gradient(135deg, #ff758c, #ff7eb3)";
+                
+                // Enable dodging behavior for No button
+                noBtn.addEventListener('mouseenter', dodgeButton);
+            }
+        }
+
+        function resetYesButton() {
+            yesBtn.style.fontSize = "1.1rem";
+            yesBtn.style.padding = "12px 30px";
+            yesBtn.style.width = "auto";
+            noBtn.style.position = "relative";
+            noBtn.style.left = "auto";
+            noBtn.style.top = "auto";
+        }
+
+        function dodgeButton(e) {
+            // Calculate new random position within view bounds
+            const containerRect = container.getBoundingClientRect();
+            const btnRect = noBtn.getBoundingClientRect();
+            
+            // Set some padding to keep button fully visible inside container
+            const padding = 20;
+            
+            const maxX = containerRect.width - btnRect.width - padding;
+            const maxY = containerRect.height - btnRect.height - padding;
+            
+            const newX = Math.random() * maxX + padding;
+            const newY = Math.random() * maxY + padding;
+            
+            // Set new position
+            noBtn.style.position = 'absolute';
+            noBtn.style.left = `${newX}px`;
+            noBtn.style.top = `${newY}px`;
+            
+            // Add a funny message on dodge
+            const dodgeMessages = [
+                "You can't catch me!",
+                "Too slow!",
+                "Try again!",
+                "Not today!",
+                "Nice try!"
+            ];
+            
+            result.textContent = dodgeMessages[Math.floor(Math.random() * dodgeMessages.length)];
+        }
+        
+        function updateProgressBar() {
+            const progress = (noCount / 5) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+        
+        // Initialize the page
+        window.onload = function() {
+            createBubbles();
+            
+            // Add random rotations to emoji
+            setInterval(() => {
+                if (noCount < 5) {
+                    emoji.style.transform = `rotate(${Math.random() * 10 - 5}deg)`;
+                }
+            }, 2000);
+        };
+    </script>
+</body>
+</html>
